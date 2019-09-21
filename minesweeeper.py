@@ -67,7 +67,7 @@ class Minesweeper(QWidget):
                 box.revealed.connect(self.on_reveal)
                 box.expandable.connect(self.expand_reveal)
 
-        QTimer.singleshot(0, lamda: self.resize(1, 1))
+        QTimer.singleshot(0, lambda: self.resize(1, 1))
 
     def reset_map(self):
         """Resets everything to inital state"""
@@ -139,19 +139,18 @@ class Minesweeper(QWidget):
         return sum
 
     def reset_adjacency(self):
-    """Calculates adjacency of every tile and store it in Tile"""
-
+        """Calculates adjacency of every tile and store it in Tile"""
         for r in range(self.row):
             for c in range(self.col):
                 tile = self.grid.itemAtPosition(r, c).widget()
                 tile.number = self.calculate_number(r, c)
 
     def left_click(self):
-    """Emulates the functionality of left click in real Minesweeper"""
+        """Emulates the functionality of left click in real Minesweeper"""
 
         self.revealed.emit(self)
         if self.number == 0:
-            self.expandable.emit(self.x  self.y)
+            self.expandable.emit(self.row,  self.col)
         self.clicked.emit()
 
 
@@ -160,4 +159,4 @@ class Minesweeper(QWidget):
         pane = QPainter(self)
         pane.setRenderHint(QPainter.Antialiasing)
 
-        tile = event.rect()
+        pass
