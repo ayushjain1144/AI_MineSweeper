@@ -183,6 +183,7 @@ class Minesweeper(QMainWindow):
 
         self.is_started = True
         print("Your Game has Started")
+        self.take_step()
 
     def take_step(self):
         """Executes a move"""
