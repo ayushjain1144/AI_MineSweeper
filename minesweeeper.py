@@ -5,6 +5,8 @@ import random
 import sys
 import time
 
+revealed = []
+
 class Tile(QWidget):
 
     expandable = pyqtSignal(int, int)
@@ -19,6 +21,7 @@ class Tile(QWidget):
         self.setFixedSize(QSize(25, 25))
         self.x = x
         self.y = y
+
         self.initialize()
 
     def initialize(self):
@@ -31,10 +34,19 @@ class Tile(QWidget):
 
         self.update()
 
+    def set_flag(self):
+        """Sets flag on discovered mines"""
+
+        self.revealed.emit(self)
+        revealed.emit()
+        self.clicked.emit()
+
+
     def left_click(self):
         """Emulates the functionality of left click in real Minesweeper"""
 
         self.revealed.emit(self)
+        revealed.append(self)
         if self.number == 0:
             self.expandable.emit(self.row,  self.col)
         self.clicked.emit()
@@ -248,6 +260,8 @@ class Minesweeper(QMainWindow):
 
         return sum
 
+
+
     def reset_adjacency(self):
         """Calculates adjacency of every tile and store it in Tile"""
         for r in range(self.row):
@@ -260,6 +274,108 @@ class Minesweeper(QMainWindow):
         t = int(time.time())
         self.clock.setText(f"{t}")
 
+    def return_surrounding(self, x, y):
+        """Returns mines surrounding the x, y tile"""
+
+        list = []
+
+        if x - 1 >= 0:
+            list.append(self.grid.itemAtPosition(x - 1, y).widget())
+
+            if y - 1 >= 0:
+                list.append(self.grid.itemAtPosition(x - 1, y - 1).widget())
+
+            if y + 1 < self.row:
+                list.append(self.grid.itemAtPosition(x - 1, y + 1).widget())
+
+
+        if x + 1 < self.col:
+            list.append(self.grid.itemAtPosition(x + 1, y).widget())
+
+            if y - 1 >= 0:
+                list.append(self.grid.itemAtPosition(x + 1, y - 1).widget())
+
+            if y + 1 < self.row:
+                list.append(self.grid.itemAtPosition(x + 1, y + 1).widget())
+
+        if y - 1 >= 0:
+
+            list.append(self.grid.itemAtPosition(x, y - 1).widget())
+
+        if y + 1 < self.row:
+
+            list.append(self.grid.itemAtPosition(x, y + 1).widget())
+
+        return list
+
+
+
+    def num_open_tiles(self):
+        """Returns number of open spaces - used for tie-breaking"""
+
+        open_tiles = 0
+        for r in range(self.row):
+            for c in range(self.col):
+                tile = self.grid.itemAtPosition(r, c).widget()
+                if tile.is_revealed:
+                    open_tiles = open_tiles + tile.is_revealed
+        return open_tiles
+
+    def count_bombs(list):
+        """Returns the number of Bombs in a list"""
+
+        sum = 0
+        for tile in list:
+            sum = sum + tile.is_mine
+
+        return count_bombs
+
+    def info_closed(list):
+        """Returns the number and list of closed tiles"""
+
+        sum = 0
+        list = []
+        for tile in list:
+            if not tile.is_revealed:
+                sum = sum + 1
+                list.append(tile)
+
+        return sum, list
+
+    def flag_definite_bomb(self):
+        """Based on revealed digits, flags the definite mine positions"""
+
+        for tile in revealed:
+
+            #get position of the tile
+            idx = self.grid.indexOf(tile)
+            location = self.layout.getItemPosition(idx)
+            row, col = location[:2]
+            list = self.return_surrounding(row, col)
+
+            num_surrounding_bombs = count_bombs(list)
+
+            num_close_tiles, list_closed_tiles = info_closed(list)
+
+            variability = tile.number - num_surrounding_bombs
+
+            if variability == num_close_tiles:
+                for tile_closed in list_closed_tiles:
+                    tile_closed.set_flag()
+
+
+
+
+
+
+
+    def heurestic_2(self):
+        """Calculates heurestic for the present board condition"""
+        """Heurestic is sum of digits in the present region"""
+
+        num_mines = 0
+
+        return num_mines
 
 
 app = QApplication(sys.argv)
