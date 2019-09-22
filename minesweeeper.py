@@ -159,4 +159,32 @@ class Minesweeper(QWidget):
         pane = QPainter(self)
         pane.setRenderHint(QPainter.Antialiasing)
 
-        pass
+        object = event.rect()
+
+        #Conditions if the square is is_revealed
+
+        if self.is_revealed:
+
+            if self.is_mine:
+                pane.drawPixmap(object, QPixmap("bomb.png"))
+
+            elif self.number > 0:
+                pen = QPen();
+                pen.setColor("red")
+                font = pane.font()
+                font.setBold(True)
+                pane.setFont(font)
+
+                pane.drawText(rect, Qt.AlignHCenter | Qt.AlignVCenter, str(self.number))
+
+        else:
+
+            pane.fillRect(object, QBrush(Qt.lightGray))
+            pen = QPen(Qt.gray)
+            pen.setWidth(1)
+            pane.setPen(pen)
+            pane.drawRect(object)
+
+            if self.is_mine:
+                pane.setOpacity(0.3)
+                pane.drawPixmap(object, QPixMap("bomb.png"))
