@@ -37,9 +37,14 @@ class Tile(QWidget):
     def set_flag(self):
         """Sets flag on discovered mines"""
 
-        self.revealed.emit(self)
-        revealed.emit()
-        self.clicked.emit()
+        self.is_flagged = True
+
+
+    def reveal(self):
+        """Reveal the tile"""
+
+        self.is_revealed = True
+        self.update()
 
 
     def left_click(self):
@@ -63,6 +68,12 @@ class Tile(QWidget):
 
         if self.is_revealed:
 
+            pane.fillRect(object, QBrush(Qt.green))
+            pen = QPen(Qt.green)
+            pen.setWidth(1)
+            pane.setPen(pen)
+            pane.drawRect(object)
+
             if self.is_mine:
                 pane.drawPixmap(object, QPixmap("bomb.png"))
 
@@ -83,6 +94,10 @@ class Tile(QWidget):
             pane.setPen(pen)
             pane.drawRect(object)
 
+
+            if self.is_flagged:
+                pane.drawPixmap(object, QPixmap("flag.png"))
+
             if self.is_mine:
                 pane.setOpacity(0.3)
                 pane.drawPixmap(object, QPixmap("bomb.png"))
@@ -93,16 +108,13 @@ class Minesweeper(QMainWindow):
     def __init__(self, row, col, num_mines):
         super().__init__()
 
-        """Options for the game: name, row, column, number_mines"""
-        self.OPTIONS = [
-            ("8 X 8", 8, 8, 10),
-            ("16 X 16", 16, 16, 40),
-            ("30 X 16", 30, 16, 99),
-            ("Custom", row, col, num_mines)
-            ]
+
         self.row = row
         self.col = col
         self.num_mines = num_mines
+        self.is_started = False
+
+        self.setWindowTitle(f"AI Minesweeper : {self.row} X {self.col}")
 
         window = QWidget()
         layout = QHBoxLayout()
@@ -110,41 +122,41 @@ class Minesweeper(QMainWindow):
         self.mines = QLabel()
         self.mines.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
-        self.clock = QLabel()
-        self.clock.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.next_button = QPushButton()
+        self.next_button.setFixedSize(QSize(50, 50))
+        self.next_button.setStyleSheet('QPushButton {background-color: #000000; color: red;}')
+        self.next_button.setText('Next')
+
+        self.next_button.pressed.connect(self.take_step)
 
         self.mines.setText(f"{self.num_mines}")
-        self.clock.setText("000")
+
         font = self.mines.font()
         font.setPointSize(20)
         font.setWeight(65)
         self.mines.setFont(font)
         self.mines.setFont(font)
 
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_timer)
-        self.timer.start(1000)
+
 
         self.button = QPushButton()
-        self.button.setFixedSize(QSize(30, 30))
+        self.button.setFixedSize(QSize(50, 50))
         self.button.setStyleSheet('QPushButton {background-color: #000000; color: red;}')
-        self.button.setText('Start Game')
+        self.button.setText('Start')
 
-        #self.button.pressed.connect(self.button_pressed)
+        self.button.pressed.connect(self.start_option)
 
         self.mines_label = QLabel()
         self.mines_label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.mines_label.setText("Mines: ")
 
-        self.timer_label = QLabel()
-        self.timer_label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        self.mines_label.setText("Timer: ")
+
 
         layout.addWidget(self.mines_label)
         layout.addWidget(self.mines)
         layout.addWidget(self.button)
-        layout.addWidget(self.timer_label)
-        layout.addWidget(self.clock)
+        layout.addWidget(self.next_button)
+
 
         vert_layout = QVBoxLayout()
         vert_layout.addLayout(layout)
@@ -166,16 +178,20 @@ class Minesweeper(QMainWindow):
 
 
 
-    def start_option(self, option):
-        """Defines the start option from the Option list"""
+    def start_option(self):
+        """Changes Flag"""
 
-        self.level_name, self.row, self.col, self.num_mines = self.OPTIONS[option]
+        self.is_started = True
+        print("Your Game has Started")
 
-        self.setWindowTitle(f"AI Minesweeper ----- {self.level_name}")
-        self.mines.setText(f"{self.num_mines}")
-        self.clear_map()
-        self.init_map()
-        self.reset_map()
+    def take_step(self):
+        """Executes a move"""
+
+        print("Showing the next move")
+
+
+
+
 
     def init_map(self):
         """Added boxes on GUI"""
@@ -197,7 +213,7 @@ class Minesweeper(QMainWindow):
         self.reset_position()
         self.add_mines()
         self.reset_adjacency()
-        self.update_timer()
+
 
     def reset_position(self):
         """Clears the position of mines"""
@@ -220,6 +236,7 @@ class Minesweeper(QMainWindow):
 
                 box = self.grid.itemAtPosition(r, c).widget()
                 box.is_mine = True
+
                 mine_locations.append((r, c))
         self.end_game_condition = (self.row * self.col) - (self.num_mines + 1)
 
@@ -269,10 +286,6 @@ class Minesweeper(QMainWindow):
                 tile = self.grid.itemAtPosition(r, c).widget()
                 tile.number = self.calculate_number(r, c)
 
-    def update_timer(self):
-
-        t = int(time.time())
-        self.clock.setText(f"{t}")
 
     def return_surrounding(self, x, y):
         """Returns mines surrounding the x, y tile"""
@@ -317,8 +330,8 @@ class Minesweeper(QMainWindow):
         for r in range(self.row):
             for c in range(self.col):
                 tile = self.grid.itemAtPosition(r, c).widget()
-                if tile.is_revealed:
-                    open_tiles = open_tiles + tile.is_revealed
+                if tile.is_revealed or tile.is_flagged:
+                    open_tiles = open_tiles + 1
         return open_tiles
 
     def count_bombs(list):
@@ -336,7 +349,7 @@ class Minesweeper(QMainWindow):
         sum = 0
         list = []
         for tile in list:
-            if not tile.is_revealed:
+            if not tile.is_revealed and not tile.is_flagged:
                 sum = sum + 1
                 list.append(tile)
 
