@@ -31,6 +31,7 @@ class Tile(QWidget):
         self.number = 0
         self.is_revealed = False
         self.is_flagged = False
+        self.is_clicked = False
 
         self.update()
 
@@ -69,8 +70,12 @@ class Tile(QWidget):
 
         if self.is_revealed:
 
-            pane.fillRect(object, QBrush(Qt.green))
-            pen = QPen(Qt.green)
+            if not self.is_clicked:
+                pane.fillRect(object, QBrush(Qt.green))
+                pen = QPen(Qt.green)
+            else:
+                pane.fillRect(object, QBrush(Qt.blue))
+                pen = QPen(Qt.blue)
             pen.setWidth(1)
             pane.setPen(pen)
             pane.drawRect(object)
@@ -79,7 +84,9 @@ class Tile(QWidget):
                 pane.drawPixmap(object, QPixmap("bomb.png"))
 
             elif self.number > 0:
-                pen = QPen(Qt.red);
+
+                pen = QPen(Qt.red)
+                pane.setPen(pen)
                 font = pane.font()
                 font.setBold(True)
                 pane.setFont(font)
@@ -181,15 +188,18 @@ class Minesweeper(QMainWindow):
     def start_option(self):
         """Changes Flag"""
 
-        self.is_started = True
-        print("Your Game has Started")
+        if self.is_started == False:
+            self.is_started = True
+            print("Your Game has Started")
 
-        r, c = random.randint(0, self.row - 1), random.randint(0, self.col - 1)
+            r, c = random.randint(0, self.row - 1), random.randint(0, self.col - 1)
+            self.grid.itemAtPosition(r, c).widget().is_clicked = True
+            list = self.open_area(r, c)
+            revealed.append(list)
 
-        list = self.open_area(r, c)
+            for w in list:
 
-        for w in list:
-            w.reveal()
+                w.reveal()
 
 
     def take_step(self):
@@ -293,6 +303,7 @@ class Minesweeper(QMainWindow):
             for c in range(self.col):
                 tile = self.grid.itemAtPosition(r, c).widget()
                 tile.number = self.calculate_number(r, c)
+                print(tile.number)
 
 
     def return_surrounding(self, x, y):
@@ -301,31 +312,31 @@ class Minesweeper(QMainWindow):
         list = []
 
         if x - 1 >= 0:
-            list.append(self.grid.itemAtPosition(x - 1, y).widget())
+            list.append((x - 1, y))
 
             if y - 1 >= 0:
-                list.append(self.grid.itemAtPosition(x - 1, y - 1).widget())
+                list.append((x - 1, y - 1))
 
             if y + 1 < self.row:
-                list.append(self.grid.itemAtPosition(x - 1, y + 1).widget())
+                list.append((x - 1, y + 1))
 
 
         if x + 1 < self.col:
-            list.append(self.grid.itemAtPosition(x + 1, y).widget())
+            list.append((x + 1, y))
 
             if y - 1 >= 0:
-                list.append(self.grid.itemAtPosition(x + 1, y - 1).widget())
+                list.append((x + 1, y - 1))
 
             if y + 1 < self.row:
-                list.append(self.grid.itemAtPosition(x + 1, y + 1).widget())
+                list.append((x + 1, y + 1))
 
         if y - 1 >= 0:
 
-            list.append(self.grid.itemAtPosition(x, y - 1).widget())
+            list.append((x, y - 1))
 
         if y + 1 < self.row:
 
-            list.append(self.grid.itemAtPosition(x, y + 1).widget())
+            list.append((x, y + 1))
 
         return list
 
@@ -346,7 +357,8 @@ class Minesweeper(QMainWindow):
         """Returns the number of Bombs in a list"""
 
         sum = 0
-        for tile in list:
+        for t in list:
+            tile = t.grid.itemAtPosition(t[0], t[1])
             sum = sum + tile.is_mine
 
         return count_bombs
@@ -356,7 +368,8 @@ class Minesweeper(QMainWindow):
 
         sum = 0
         list = []
-        for tile in list:
+        for t in list:
+            tile = t.grid.itemAtPosition(t[0], t[1])
             if not tile.is_revealed and not tile.is_flagged:
                 sum = sum + 1
                 list.append(tile)
@@ -399,6 +412,7 @@ class Minesweeper(QMainWindow):
         return list(next_set)
 
     def open_area(self, x, y):
+        """Opens the area when clicked on a tile"""
 
         open_queue =  [(x, y)]
         reveal_queue = []
@@ -411,14 +425,23 @@ class Minesweeper(QMainWindow):
 
             for x, y in list:
                 positions = self.return_surrounding(x, y)
-                for w in positions:
+                for w1 in positions:
+                    w = self.grid.itemAtPosition(w1[0], w1[1]).widget()
+
                     if not w.is_mine and w not in reveal_queue:
                         reveal_queue.append(w)
                         if w.number == 0:
                             open_queue.append((w.x, w.y))
                             flag = True
 
+
+
+
+
+
         return reveal_queue
+
+
 
     def nextState(self, tile):
         """Generates next state"""
@@ -433,9 +456,10 @@ class Minesweeper(QMainWindow):
 
 
 
-    def heurestic_2(self):
+
+    def heurestic_1(self):
         """Calculates heurestic for the present board condition"""
-        """Heurestic is sum of digits in the present region"""
+
 
         num_mines = 0
 
