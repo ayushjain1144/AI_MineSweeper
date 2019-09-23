@@ -45,6 +45,7 @@ class Tile(QWidget):
 
         self.is_revealed = True
         self.update()
+        self.revealed.emit(self)
 
 
     def left_click(self):
@@ -78,13 +79,12 @@ class Tile(QWidget):
                 pane.drawPixmap(object, QPixmap("bomb.png"))
 
             elif self.number > 0:
-                pen = QPen();
-                pen.setColor("red")
+                pen = QPen(Qt.red);
                 font = pane.font()
                 font.setBold(True)
                 pane.setFont(font)
 
-                pane.drawText(rect, Qt.AlignHCenter | Qt.AlignVCenter, str(self.number))
+                pane.drawText(object, Qt.AlignHCenter | Qt.AlignVCenter, str(self.number))
 
         else:
 
@@ -183,7 +183,14 @@ class Minesweeper(QMainWindow):
 
         self.is_started = True
         print("Your Game has Started")
-        self.take_step()
+
+        r, c = random.randint(0, self.row - 1), random.randint(0, self.col - 1)
+
+        list = self.open_area(r, c)
+
+        for w in list:
+            w.reveal()
+
 
     def take_step(self):
         """Executes a move"""
@@ -356,9 +363,10 @@ class Minesweeper(QMainWindow):
 
         return sum, list
 
-    def flag_definite_bomb(self):
-        """Based on revealed digits, flags the definite mine positions"""
+    def count_definite_bomb(self):
+        """Based on revealed digits, count the definite mine positions"""
 
+        count = 0
         for tile in revealed:
 
             #get position of the tile
@@ -374,8 +382,50 @@ class Minesweeper(QMainWindow):
             variability = tile.number - num_surrounding_bombs
 
             if variability == num_close_tiles:
-                for tile_closed in list_closed_tiles:
-                    tile_closed.set_flag()
+                count = count + len(list_closed_tiles)
+
+        return count
+
+    def get_next_step_list(self):
+        """Returns possible steps it can take"""
+
+        next_set = {}
+
+        for tile in revealed:
+
+            if tile.number > 0:
+                _, list_closed_tiles = info_closed(list)
+                next_set.update(list_closed_tiles)
+        return list(next_set)
+
+    def open_area(self, x, y):
+
+        open_queue =  [(x, y)]
+        reveal_queue = []
+        flag = True
+
+        while flag:
+            flag = False
+            list = open_queue
+            open_queue = []
+
+            for x, y in list:
+                positions = self.return_surrounding(x, y)
+                for w in positions:
+                    if not w.is_mine and w not in reveal_queue:
+                        reveal_queue.append(w)
+                        if w.number == 0:
+                            open_queue.append((w.x, w.y))
+                            flag = True
+
+        return reveal_queue
+
+    def nextState(self, tile):
+        """Generates next state"""
+
+        #tile is the tile we would click
+
+
 
 
 
