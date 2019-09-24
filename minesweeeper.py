@@ -233,12 +233,15 @@ class Minesweeper(QMainWindow):
             tile = self.grid.itemAtPosition(tile_coords[0], tile_coords[1]).widget()
             list = self.nextState(tile_coords)
             h_value = self.heurestic()
-            tile_heurestic_list.append((tile_coords, h_value))
+            h_value_tie_break = self.num_open_tiles()
+            tile_heurestic_list.append((tile_coords, h_value, h_value_tie_break))
 
             print(f"The heurestic value for tile at {tile_coords} is {h_value}")
 
             for w in list:
                 w.undo_reveal()
+
+        self.hill_climbing(tile_heurestic_list)
 
 
 
@@ -522,7 +525,7 @@ class Minesweeper(QMainWindow):
 
         r = tile_coords[0]
         c = tile_coords[1]
-        self.grid.itemAtPosition(r, c).widget().is_clicked = True
+
         initial_open = self.get_revealed_tiles()
         new_open_list = self.open_area(r, c)
 
@@ -535,23 +538,49 @@ class Minesweeper(QMainWindow):
         return new_change_list
 
 
+    def heurestic_2(self):
+        """Calculates heurestic for the present board condition by summing the numbers on the tile"""
 
+        sum = 0
+        for r in range(self.row):
+            for c in range(self.col):
+                tile = self.grid.itemAtPosition(r, c).widget()
+                if tile.is_revealed:
+                    sum = sum + tile.number
+        return sum
 
+    def hill_climbing(self, list):
+        """Takes the forward step, depending on list of heuristic and tile locations"""
 
+        best_child_list = []
+        #print(list)
+        if len(list) == 0:
+            print("Game Over")
+            return
+        best_hvalue = max(list, key=lambda i: i[1])[1]
+        for item in list:
+            if item[1] == best_hvalue:
+                best_child_list.append(item)
 
+        if len(best_child_list) != 1:
 
+            print("Breaking the equal heurestic case")
+            best_tie_break = max(best_child_list, key=lambda i: i[2])
 
+            print(f"The maximum value for tie break is for {best_tie_break[0]} with tie-break value {best_tie_break[2]}")
+            print("Opening the tile")
+            r = best_tie_break[0][0]
+            c = best_tie_break[0][1]
+            self.grid.itemAtPosition(r, c).widget().is_clicked = True
+            self.nextState(best_tie_break[0])
+        else:
+            r = ((best_child_list[0])[0])[0]
+            c = ((best_child_list[0])[0])[1]
+            self.grid.itemAtPosition(r, c).widget().is_clicked = True
+            self.nextState((best_child_list[0])[0])
 
-
-    def heurestic_1(self):
-        """Calculates heurestic for the present board condition"""
-
-
-        num_mines = 0
-
-        return num_mines
 
 
 app = QApplication(sys.argv)
-ex = Minesweeper(8, 8, 4)
+ex = Minesweeper(15, 15, 20)
 sys.exit(app.exec_())
