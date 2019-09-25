@@ -249,13 +249,14 @@ class Minesweeper(QMainWindow):
 
         tile_heurestic_list = []
         list_states = self.get_next_step_list()
-
+        parent_heurestic = self.heurestic()
         for tile_coords in list_states:
             tile = self.grid.itemAtPosition(tile_coords[0], tile_coords[1]).widget()
             list = self.nextState(tile_coords)
             h_value = self.heurestic()
+            h_value_difference = h_value - parent_heurestic
             h_value_tie_break = self.num_open_tiles()
-            tile_heurestic_list.append((tile_coords, h_value, h_value_tie_break))
+            tile_heurestic_list.append((tile_coords, h_value_difference, h_value_tie_break))
 
             print(f"The heurestic value for tile at {tile_coords} is {h_value}")
 
@@ -361,7 +362,7 @@ class Minesweeper(QMainWindow):
             for c in range(self.col):
                 tile = self.grid.itemAtPosition(r, c).widget()
                 tile.number = self.calculate_number(r, c)
-                
+
 
 
     def return_surrounding(self, x, y):
@@ -448,6 +449,17 @@ class Minesweeper(QMainWindow):
                     list.append(tile)
         return list
 
+    def get_flagged_tiles(self):
+        """Returns the number of flagged tiles"""
+
+        sum = 0
+        for r in range(self.row):
+            for c in range(self.col):
+                tile = self.grid.itemAtPosition(r, c).widget()
+                if tile.is_flagged:
+                    sum = sum + 1
+        return sum
+
     def flag_definite_bomb(self):
         """Based on revealed digits, flag the definite mine positions"""
 
@@ -501,7 +513,7 @@ class Minesweeper(QMainWindow):
             if variability == num_close_tiles:
                 count = count + len(list_closed_tiles)
 
-        return count
+        return count + self.get_flagged_tiles()
 
     def get_next_step_list(self):
         """Returns possible steps it can take"""
