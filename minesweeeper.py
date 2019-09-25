@@ -206,8 +206,12 @@ class Minesweeper(QMainWindow):
             print("Your Game has Started")
 
             r, c = random.randint(0, self.row - 1), random.randint(0, self.col - 1)
+            tile = self.grid.itemAtPosition(r, c).widget()
+            while tile.is_mine:
+                r, c = random.randint(0, self.row - 1), random.randint(0, self.col - 1)
+                tile = self.grid.itemAtPosition(r, c).widget()
 
-            self.grid.itemAtPosition(r, c).widget().is_clicked = True
+            tile.is_clicked = True
             list = self.open_area(r, c)
 
 
@@ -500,10 +504,16 @@ class Minesweeper(QMainWindow):
         reveal_queue = []
         flag = True
 
+        tile = self.grid.itemAtPosition(x , y).widget()
+        reveal_queue.append(tile)
+        if tile.is_mine:
+            return reveal_queue
+
         while flag:
             flag = False
             list = open_queue
             open_queue = []
+
 
             for x, y in list:
                 positions = self.return_surrounding(x, y)
@@ -530,7 +540,8 @@ class Minesweeper(QMainWindow):
         new_open_list = self.open_area(r, c)
 
         new_change_list = list(set(new_open_list) - set(initial_open))
-
+        #print(new_open_list)
+        #print(new_change_list)
         for w in new_change_list:
 
             w.reveal()
@@ -572,12 +583,13 @@ class Minesweeper(QMainWindow):
             r = best_tie_break[0][0]
             c = best_tie_break[0][1]
             self.grid.itemAtPosition(r, c).widget().is_clicked = True
-            self.nextState(best_tie_break[0])
+
+            self.nextState((r, c))
         else:
             r = ((best_child_list[0])[0])[0]
             c = ((best_child_list[0])[0])[1]
             self.grid.itemAtPosition(r, c).widget().is_clicked = True
-            self.nextState((best_child_list[0])[0])
+            self.nextState((r, c))
 
 
 
