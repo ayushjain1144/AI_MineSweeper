@@ -90,12 +90,14 @@ class Tile(QWidget):
             pane.drawRect(object)
 
             if self.is_mine and not self.is_flagged:
+
                 pane.drawPixmap(object, QPixmap("bomb.png"))
 
             elif self.is_flagged:
                 pane.drawPixmap(object, QPixmap("flag.png"))
                 pane.setOpacity(0.3)
                 pane.drawPixmap(object, QPixmap("bomb.png"))
+
 
             elif self.number > 0:
 
@@ -133,6 +135,7 @@ class Minesweeper(QMainWindow):
         self.col = col
         self.num_mines = num_mines
         self.is_started = False
+        self.is_over = False
 
         self.setWindowTitle(f"AI Minesweeper : {self.row} X {self.col}")
 
@@ -149,13 +152,23 @@ class Minesweeper(QMainWindow):
 
         self.next_button.pressed.connect(self.take_step)
 
-        self.mines.setText(f"{self.num_mines}")
+        self.mines.setText(f"Mines: {self.num_mines}")
 
         font = self.mines.font()
         font.setPointSize(20)
         font.setWeight(65)
         self.mines.setFont(font)
         self.mines.setFont(font)
+
+        self.num_steps = 0
+        self.steps = QLabel()
+        self.steps.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.steps.setText(f"Steps: {self.num_steps}")
+        font = self.steps.font()
+        font.setPointSize(20)
+        font.setWeight(65)
+        self.steps.setFont(font)
+        self.steps.setFont(font)
 
 
 
@@ -171,8 +184,7 @@ class Minesweeper(QMainWindow):
         self.mines_label.setText("Mines: ")
 
 
-
-        layout.addWidget(self.mines_label)
+        layout.addWidget(self.steps)
         layout.addWidget(self.mines)
         layout.addWidget(self.button)
         layout.addWidget(self.next_button)
@@ -224,6 +236,11 @@ class Minesweeper(QMainWindow):
     def take_step(self):
         """Executes a move"""
 
+        if self.is_over:
+            if self.num_mines == 0:
+                print("You Won!!")
+            print("Game over")
+            return
         print("Flagging the sure mines in this state")
         self.flag_definite_bomb()
 
@@ -246,6 +263,8 @@ class Minesweeper(QMainWindow):
                 w.undo_reveal()
 
         self.hill_climbing(tile_heurestic_list)
+        self.num_steps = self.num_steps + 1
+        self.steps.setText(f"Steps: {self.num_steps}")
 
 
 
@@ -342,7 +361,7 @@ class Minesweeper(QMainWindow):
             for c in range(self.col):
                 tile = self.grid.itemAtPosition(r, c).widget()
                 tile.number = self.calculate_number(r, c)
-                print(tile.number)
+                
 
 
     def return_surrounding(self, x, y):
@@ -454,6 +473,8 @@ class Minesweeper(QMainWindow):
                 if variability == num_close_tiles:
                     for tile in list_closed_tiles:
                         print(f"{row}, {col}")
+                        self.num_mines = self.num_mines - 1
+                        self.mines.setText(f"Mines: {self.num_mines}")
                         tile.set_flag()
 
         return count
@@ -566,7 +587,7 @@ class Minesweeper(QMainWindow):
         best_child_list = []
         #print(list)
         if len(list) == 0:
-            print("Game Over")
+            self.is_over = True
             return
         best_hvalue = max(list, key=lambda i: i[1])[1]
         for item in list:
@@ -588,8 +609,10 @@ class Minesweeper(QMainWindow):
         else:
             r = ((best_child_list[0])[0])[0]
             c = ((best_child_list[0])[0])[1]
+            print(f"The best tile is {r, c} with heurestic {best_hvalue}")
             self.grid.itemAtPosition(r, c).widget().is_clicked = True
             self.nextState((r, c))
+
 
 
 
