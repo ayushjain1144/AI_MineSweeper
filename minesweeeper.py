@@ -1,3 +1,10 @@
+"""
+#######################
+NAME: AYUSH JAIN
+ID: 2017A7PS0093P
+######################
+"""
+
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -136,6 +143,7 @@ class Minesweeper(QMainWindow):
         self.num_mines = num_mines
         self.is_started = False
         self.is_over = False
+        self.var = 101
 
         self.setWindowTitle(f"AI Minesweeper : {self.row} X {self.col}")
 
@@ -231,6 +239,9 @@ class Minesweeper(QMainWindow):
 
                 w.reveal()
 
+    def schedule(k=10, lam=0.005, limit=100):
+        return lambda t: (k * math.exp(-lam * t) if t < limit else 0)
+
 
 
     def take_step(self):
@@ -264,6 +275,7 @@ class Minesweeper(QMainWindow):
                 w.undo_reveal()
 
         self.hill_climbing(tile_heurestic_list)
+        #self.stimulated_annealing(tile_heurestic_list, 0.5, self.var)
         self.num_steps = self.num_steps + 1
         self.steps.setText(f"Steps: {self.num_steps}")
 
@@ -412,6 +424,9 @@ class Minesweeper(QMainWindow):
                     open_tiles = open_tiles + 1
         return open_tiles
 
+
+
+
     def count_bombs(self, list):
         """Returns the number of Bombs in a list"""
 
@@ -490,6 +505,7 @@ class Minesweeper(QMainWindow):
                         tile.set_flag()
 
         return count
+            
 
     def heurestic(self):
         """Based on revealed digits, count the definite mine positions"""
@@ -561,7 +577,6 @@ class Minesweeper(QMainWindow):
         return reveal_queue
 
 
-
     def nextState(self, tile_coords):
         """Generates next state"""
         #tile is the tile we would click
@@ -615,9 +630,8 @@ class Minesweeper(QMainWindow):
             print("Opening the tile")
             r = best_tie_break[0][0]
             c = best_tie_break[0][1]
-            self.grid.itemAtPosition(r, c).widget().is_clicked = True
-
             self.nextState((r, c))
+
         else:
             r = ((best_child_list[0])[0])[0]
             c = ((best_child_list[0])[0])[1]
@@ -625,9 +639,45 @@ class Minesweeper(QMainWindow):
             self.grid.itemAtPosition(r, c).widget().is_clicked = True
             self.nextState((r, c))
 
+    def simulated_annealing(self, list, thresh, t):
+        """simulated_annealing Implemented"""
+
+        best_child_list = []
+        #print(list)
+
+        T = schedule(t)
+        if len(list) == 0:
+            self.is_over = True
+            return
+
+        while True:
+            next_choice = random.choice(list)
+
+            delta_e = next_choice[1] - self.heurestic()
+            if delta_e > 0 or math.exp(delta_e / T) > thresh:
+                self.nextState(next_choice[0][0], next_choice[0][1])
+                return
 
 
+
+
+
+
+
+#########################################
+# driver
+
+print("Welcome to the minesweeper game")
+print("\nI can solve even challenging problems like 15 by 15 with 100 mines")
+print("\nEnter value of row of game: ", end="")
+row_input = int(input())
+print("\nEnter value of column of game: ", end="")
+col_input = int(input())
+print("\nEnter number of mines: ", end="")
+mines_input = int(input())
+
+# Memory profiling
 
 app = QApplication(sys.argv)
-ex = Minesweeper(15, 15, 20)
+ex = Minesweeper(row_input, col_input, mines_input)
 sys.exit(app.exec_())
